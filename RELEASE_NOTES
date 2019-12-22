@@ -1,18 +1,10 @@
-Release 0.28.0
+Release 0.30.0
 ==============
 
-This release needs recent FFmpeg (newer than 3.4) due to major refactoring.
-Required library versions:
+This release requires FFmpeg 4.0 or newer.
+This release has replaced the internal Vulkan rendering abstraction
+with libplacebo's more up-to-date implementation.
 
-  * libavutil >= 56.6.100
-  * libavcodec >= 58.7.100
-  * libavformat >= 58.0.102
-  * libswscale >= 5.0.101
-  * libavfilter >= 7.0.101
-  * libswresample >= 3.0.100
-
-The LGPL 2.1+ relicensing process is now mostly complete. The remaining GPL-only
-code (see Copyright file) can be disabled at build time by using --enable-lgpl.
 
 Features
 --------
@@ -20,33 +12,54 @@ Features
 Added
 ~~~~~
 
-- Add DRM_PRIME Format Handling and Display for RockChip MPP decoders
-- csputils: Add support for Display P3 primaries
-- demux: support multiple seekable cached ranges, display cache ranges on OSC
-- demux_playlist: support .url files (#5107)
-- dvb: Add multiple frontends support (up to 8)
-- dvb: implement parsing of modulation for VDR-style channels config
-- hwdec: add mediacodec hardware decoder for IMGFMT_MEDIACODEC frames,
-  rename mediacodec to mediacodec-copy
-- lua: integrate stats.lua script (bound to i/I by default)
-- vd_lavc: add support for nvdec hwaccel
-- vo_gpu: add android opengl backend
-- vo_gpu: initial d3d11 support
-- vo_gpu: vulkan support
+- vo_gpu: vulkan: hwdec_cuda: Add support for Vulkan interop
+- command: support for async commands
+- input: support for named arguments
+- cocoa-cb: add support for mac 10.14 Dark mode and run time switching
+- vo_gpu: switch to Vulkan API implementation based on libplacebo
+- context_drm_egl: Add support for presentation feedback
+- vo_gpu: implement error diffusion for dithering
+- vo/gpu: hwdec_vdpau: Support direct mode for 4:4:4 content
+- vo_gpu: hwdec_vaapi: Add Vulkan interop
+- video, TOOLS: add vf_fingerprint and a skip-logo script
+- vo_gpu: d3d11: add support for presentation feedback
+- vo_drm: 30bpp support
+- cocoa-cb: add support for 10bit opengl rendering
+- video: add pure gamma TRC curves for 2.0, 2.4 and 2.6
+- vo_drm: Implement N-buffering and presentation feedback
+- Reintroduce vo_wayland as vo_wlshm
+- video: add zimg wrapper
+- wayland: add presentation time
+- input: add gamepad support through SDL2
+
+
+Changed
+~~~~~~~
+
+- cocoa-cb: use libmpv's advanced rendering control and timing
+- vo_gpu: improve tone mapping desaturation
+- vo_gpu: redesign peak detection algorithm
+- vo_gpu: allow boosting dark scenes when tone mapping
+- osc: improve look of seekranges
+- vo_gpu: x11: remove special vdpau probing, use EGL by default
+- demux: sort filenames naturally when playing a directory / archive
+- stream_dvb: rewrite channel switching, remove old stream control
+- filters: extend vf_format so that it can convert color parameters
 
 
 Removed
 ~~~~~~~
 
-- af: remove deprecated audio filters (channels, equalizer, pan, volume;
-  replacements in lavfi)
-- vf: remove most GPL video filters (crop, dsize, expand, flip, gradfun, mirror,
-  noformat, pullup, rotate, scale, stereo3d, yadif; replacements in lavfi)
-- vf_buffer: remove this filter
-- video: remove automatic stereo3d filter insertion
-- vo_gpu: remove hwdec_vaglx interop
-- vo_opengl: refactor into vo_gpu
-- vo_wayland: remove
+- demux, stream: rip out the classic stream cache
+- vo_gpu: removed internal Vulkan implementation
+- Remove libdvdread support in favor of libdvdnav
+- demux, stream: remove much of the optical disc support
+- Remove classic Linux analog TV support, and DVB runtime controls
+- demux, stream: remove old rar support in favor of libarchive
+- vo_gpu: remove mali-fbdev
+- vo_gpu: remove vdpau/GLX backend
+- vf_vapourynth: remove Lua backend
+- vo_gpu: remove hwdec_d3d11eglrgb
 
 
 Options and Commands
@@ -55,106 +68,67 @@ Options and Commands
 Added
 ~~~~~
 
-- demux: add option to create CC tracks eagerly (--sub-create-cc-track)
-- options: add --start=none to reset previously set start time
-- options: add --vlang switch
+- command: add a subprocess command
+- vo_gpu: added --tone-mapping-max-boost, --hdr-peak-decay-rate, --hdr-scene-threshold-low/high
+- player: add --demuxer-cache-wait option
+- Implement backwards playback
+- demux: add a on-disk cache
+- demux, command: add another stream recording mechanism, `dump-cache` command
+- ao_pulse: add --pulse-allow-suspended
+- command: add video-add/video-remove/video-reload commands
+- demux_cue: added --demuxer-cue-codepage to select CUE sheet charset
+- input: add keybind command
+- command: add sub-start & sub-end properties
+- video/d3d11: added --d3d11-adapter to select a rendering adapter by name
+- vo_gpu/d3d11: added --d3d11-output-format for configuring swap chain format
 
 
 Changed
 ~~~~~~~
 
-- cache: lower default size to 2*10MB
-- demux: bump the demuxer cache readahead duration to 10 hours
-- demux: use seekable cache for network by default, bump prefetch limit
-- msg: make --msg-level affect --log-file too
-- player/misc.c: allow both --length and --end to control play endpoint
-- player: match subtitles with language tags with --sub-auto=exact
-- rename --opengl-hwdec-interop to --gpu-hwdec-interop (now mostly useless)
-- vd_lavc: prefer nvdec over vdpau with --hwdec=auto (better codec and surface
-  format support)
-- vd_lavc: rename --hwdec=rpi to --hwdec=mmal
+- vo_gpu: split --linear-scaling into --linear-upscaling and --linear-downscaling
+- vo_gpu: split --tone-mapping-desaturate into strength and exponent
+- drm: rename --drm-osd-plane-id to --drm-draw-plane, --drm-video-plane-id to --drm-drmprime-video-plane, --drm-osd-size to --drm-draw-surface-size
+
+
+Deprecated
+~~~~~~~~~~
+
+- options: deprecate --video-aspect, replaced by --video-aspect-override
+- options: deprecate --record-file, --spirv-compiler
 
 
 Removed
 ~~~~~~~
 
-- options: remove --heartbeat-cmd and --heartbeat-interval
-  (incidentally fixes #4888)
+- options: remove deprecated --chapter option
+- demux: remove "program" property
+- stream: remove "disc-titles", "disc-title", "disc-title-list", and "angle" properties
+- cocoa-cb: remove --macos-title-bar-style, replaced by --macos-title-bar-material and --macos-title-bar-appearance
+- spirv: remove support for --spirv-compiler=nvidia (shaderc is the only remaining option)
 
 
 Fixes and Minor Enhancements
 ----------------------------
 
-- TOOLS/autoload.lua: add ogm, ogg and opus extensions
-- Use /dev/tty instead of stdin for terminal input (#4190)
-- audio: add audio softvol processing to AO (replaces previously GPL’d code)
-- audio: fix channel conversion with NA channels (e.g. with ALSA)
-- audio: fix missing volume update on init and reinit
-- csputils: Fix DCI P3 primaries white point
-- demux: don't allow subtitles to mess up buffered time display
-- demux: fix .cue files with audio files that contain attached pictures
-- demux: fix accounting for seekable ranges on track switches (fixes missing
-  audio when cycling through audio tracks with e.g. EDL, --merge-files, ordered
-  chapters and youtube-dl pseudo DASH)
-- demux: fix crash with cue/ordered chapter files (#5027)
-- demux: speed up cache seeking with a coarse index
-- demux_lavf: always give libavformat the filename when probing
-  (helps with mp3 files)
-- demux_mkv: add V_SNOW tag to mkv_video_tags
-- dvb: Fix long channel switching: next/prev channel
-- dvb: fixes for ATSC tuning
-- lavc_conv: clamp timestamps to positive (#5047)
-- macOS: fix bundle on macOS High Sierra (10.13) (#4926, #4866)
-- mp_image: always copy color attributes on hw download (#4804)
-- mp_image: select an explicit fallback for chroma location (#4804)
-- msg: bump log level of --log-file to -v -v
-- msg: reinterpret a bunch of message levels
-- osc: fix rare stack overflow when changing visibility mode
-- osdep/io: add android-related bullshit to fix files >2 GiB
-- player/playloop.c: respect playback start time when using --loop-file
-- player: allow seeking in cached parts of unseekable streams
-- player: make track language matching case insensitive (#5272)
-- player: use start timestamp for ab-looping if --ab-loop-a is absent
-- player: when loading external file, always add all track types (#5132)
-- restore-old-bindings.conf: add old macOS/Wayland AXIS bindings
-- screenshot: create directories from template
-- scripting: report dlerror() output
-- sd_ass: accept RFC8081 font media types
-- sd_ass: accept otc as fallback OpenType collection file extension
-- stream_libarchive: work around various types of locale braindeath
-  (https://git.io/vbiFJ)
-- subprocess-win: don't change the mouse cursor when creating processes
-- video: add a hack to avoid missing subtitles with vf_sub (#5194)
-- video: fix alpha handling (#4983)
-- video: fix memory leaks (roughly 1 KB per decoded frame) with hwdec copy modes
-- video: fix rotation and deinterlace auto filters
-- video: properly pass through ICC data
-- vo: add support for externally driven renderloop and make wayland use it
-  (partially fixes display-sync under wayland; disables rendering when window
-  is invisible)
-- vo_gpu: change --tone-mapping-desaturate algorithm
-- vo_gpu: enable 3DLUTs in dumb mode
-- vo_gpu: fix gamma scale
-- vo_gpu: fix mobius tone mapping compatibility to GLSL 120 (#5069)
-- vo_gpu: fix video sometimes not being rerendered on equalizer change
-- vo_gpu: kill off FBOTEX_FUZZY (#1814)
-- vo_gpu: opengl: fix possible screenshot window crash (#4905)
-- vo_gpu: opengl: use GLX_MESA_swap_control where available
-- vo_gpu: reduce the --alpha=blend-tiles checkerboard intensity
-- vo_gpu: win: remove exclusive-fullscreen detection hack
-- vo_lavc: remove messy delayed subtitle rendering logic (#4689)
-- wayland_common: implement output tracking, many cleanups and bugfixes
-- Windows: skip window snapping if Windows handled it
-- Windows: add more-POSIXy versions of open() and fstat() (#4711)
-- ytdl_hook: don't prepend ytdl:// to non-youtube links in playlists (#5003)
+- context_drm_egl: implement n-buffering
+- cocoa-cb: add support for custom colored title bar
+- vo_gpu: x11egl: support Mesa OML sync extension
+- demux, demux_edl: add extension for tracks sourced from separate streams
+- context_drm_egl: Use eglGetPlatformDisplayEXT if available
+- vo_gpu: vulkan: add Android context
+- wayland: use xdg-decoration if available
+- vo_gpu: glx: use GLX_OML_sync_control for better vsync reporting
+- demux: runtime option changing for cache and stream recording
+- x11: fix ICC profiling for multiple monitors
+- zsh completion: move generation to runtime and improve
 
 
 This listing is not complete. Check DOCS/client-api-changes.rst for a history
 of changes to the client API, and DOCS/interface-changes.rst for a history
 of changes to other user-visible interfaces.
 
-A complete changelog can be seen by running `git log v0.27.0..v0.28.0`
+A complete changelog can be seen by running `git log v0.29.1..v0.30.0`
 in the git repository or by visiting either
-https://github.com/mpv-player/mpv/compare/v0.27.0...v0.28.0 or
-https://git.srsfckn.biz/mpv/log/?qt=range&q=v0.27.0..v0.28.0
-
+https://github.com/mpv-player/mpv/compare/v0.29.1...v0.30.0 or
+https://git.srsfckn.biz/mpv/log/?qt=range&q=v0.29.1..v0.30.0

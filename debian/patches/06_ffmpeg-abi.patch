@@ -1,41 +1,31 @@
-From cdaf079a7b61379f450239ecefd0f5af38091901 Mon Sep 17 00:00:00 2001
-From: Metztli Information Technology <jose@metztli-it.com>
-Date: Tue, 29 May 2018 05:55:52 -0700
-Subject: [PATCH] mpv-0.28 a la debian supress ffmpeg version mismatch error
- Requiring an exact ffmpeg version isn't helpful in a distribution where all ABI
- issues should already be handled by package dependencies. Rebuilding every time
- ffmpeg is updated is also completely unmaintainable.
-
+Description: Suppress ffmpeg version mismatch error
+ Requiring an exact ffmpeg version is usually not a good idea in a binary
+ distribution because:
+ - All FFmpeg security updates require a subsequent binNMU of mpv.
+ - Debian generated dependencies do not capture this dependency well (at least
+   without extra hacking).
+ - The requirement itself usually indicates an ABI violation.
+ For these reasons, remove the check and assume the current FFmpeg version is
+ compatible.
+Author: James Cowgill <jcowgill@debian.org>
+Bug-Debian: https://bugs.debian.org/831537
 ---
- player/main.c | 15 ---------------
- 1 file changed, 15 deletions(-)
-
-diff --git a/player/main.c b/player/main.c
-index f56191a297..65748df2f2 100644
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
 --- a/player/main.c
 +++ b/player/main.c
-@@ -381,21 +381,6 @@ int mp_initialize(struct MPContext *mpctx, char **options)
+@@ -384,15 +384,6 @@ int mp_initialize(struct MPContext *mpct
      if (handle_help_options(mpctx))
          return 1; // help
  
 -    if (!print_libav_versions(mp_null_log, 0)) {
--        // Using mismatched libraries can be legitimate, but even then it's
--        // a bad idea. We don't acknowledge its usefulness and stability.
--        // Distro maintainers who patch this out should be aware that mpv
--        // intentionally ignores ABI in some places where it's not possible to
--        // get by without violating it.
 -        print_libav_versions(mpctx->log, MSGL_FATAL);
--        MP_FATAL(mpctx, "\nmpv was compiled against a different version of "
+-        MP_FATAL(mpctx, "\nmpv was compiled against an incompatible version of "
 -                 "FFmpeg/Libav than the shared\nlibrary it is linked against. "
 -                 "This is most likely a broken build and could\nresult in "
--                 "misbehavior and crashes.\n\nmpv does not support this "
--                 "configuration and will not run - rebuild mpv instead.\n");
+-                 "misbehavior and crashes.\n\nThis is a broken build.\n");
 -        return -1;
 -    }
 -
      if (!mpctx->playlist->first && !opts->player_idle_mode) {
          // nothing to play
          mp_print_version(mpctx->log, true);
--- 
-2.17.0
-

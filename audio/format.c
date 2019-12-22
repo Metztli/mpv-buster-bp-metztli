@@ -29,6 +29,7 @@ int af_fmt_to_bytes(int format)
     case AF_FORMAT_U8:      return 1;
     case AF_FORMAT_S16:     return 2;
     case AF_FORMAT_S32:     return 4;
+    case AF_FORMAT_S64:     return 8;
     case AF_FORMAT_FLOAT:   return 4;
     case AF_FORMAT_DOUBLE:  return 8;
     }
@@ -55,12 +56,6 @@ bool af_fmt_is_int(int format)
     return format && !af_fmt_is_spdif(format) && !af_fmt_is_float(format);
 }
 
-// false for interleaved and AF_FORMAT_UNKNOWN
-bool af_fmt_is_planar(int format)
-{
-    return format && af_fmt_to_planar(format) == format;
-}
-
 bool af_fmt_is_spdif(int format)
 {
     return af_format_sample_alignment(format) > 1;
@@ -75,27 +70,35 @@ static const int planar_formats[][2] = {
     {AF_FORMAT_U8P,     AF_FORMAT_U8},
     {AF_FORMAT_S16P,    AF_FORMAT_S16},
     {AF_FORMAT_S32P,    AF_FORMAT_S32},
+    {AF_FORMAT_S64P,    AF_FORMAT_S64},
     {AF_FORMAT_FLOATP,  AF_FORMAT_FLOAT},
     {AF_FORMAT_DOUBLEP, AF_FORMAT_DOUBLE},
 };
 
+bool af_fmt_is_planar(int format)
+{
+    for (int n = 0; n < MP_ARRAY_SIZE(planar_formats); n++) {
+        if (planar_formats[n][0] == format)
+            return true;
+    }
+    return false;
+}
+
 // Return the planar format corresponding to the given format.
-// If the format is already planar, return it.
-// Return 0 if there's no equivalent.
+// If the format is already planar or if there's no equivalent,
+// return it.
 int af_fmt_to_planar(int format)
 {
     for (int n = 0; n < MP_ARRAY_SIZE(planar_formats); n++) {
         if (planar_formats[n][1] == format)
             return planar_formats[n][0];
-        if (planar_formats[n][0] == format)
-            return format;
     }
-    return 0;
+    return format;
 }
 
 // Return the interleaved format corresponding to the given format.
-// If the format is already interleaved, return it.
-// Always succeeds if format is actually planar; otherwise return 0.
+// If the format is already interleaved or if there's no equivalent,
+// return it.
 int af_fmt_from_planar(int format)
 {
     for (int n = 0; n < MP_ARRAY_SIZE(planar_formats); n++) {
@@ -116,11 +119,13 @@ const char *af_fmt_to_str(int format)
     case AF_FORMAT_U8:          return "u8";
     case AF_FORMAT_S16:         return "s16";
     case AF_FORMAT_S32:         return "s32";
+    case AF_FORMAT_S64:         return "s64";
     case AF_FORMAT_FLOAT:       return "float";
     case AF_FORMAT_DOUBLE:      return "double";
     case AF_FORMAT_U8P:         return "u8p";
     case AF_FORMAT_S16P:        return "s16p";
     case AF_FORMAT_S32P:        return "s32p";
+    case AF_FORMAT_S64P:        return "s64p";
     case AF_FORMAT_FLOATP:      return "floatp";
     case AF_FORMAT_DOUBLEP:     return "doublep";
     case AF_FORMAT_S_AAC:       return "spdif-aac";
@@ -132,17 +137,6 @@ const char *af_fmt_to_str(int format)
     case AF_FORMAT_S_TRUEHD:    return "spdif-truehd";
     }
     return "??";
-}
-
-int af_fmt_seconds_to_bytes(int format, float seconds, int channels, int samplerate)
-{
-    assert(!af_fmt_is_planar(format));
-    int bps      = af_fmt_to_bytes(format);
-    int framelen = channels * bps;
-    int bytes    = seconds  * bps * samplerate;
-    if (bytes % framelen)
-        bytes += framelen - (bytes % framelen);
-    return bytes;
 }
 
 void af_fill_silence(void *dst, size_t bytes, int format)

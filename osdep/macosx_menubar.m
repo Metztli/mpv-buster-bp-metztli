@@ -144,6 +144,12 @@
                         @"key"        : @"O",
                         @"target"     : self
                     }],
+                    [NSMutableDictionary dictionaryWithDictionary:@{
+                        @"name"       : @"Open Playlist…",
+                        @"action"     : @"openPlaylist",
+                        @"key"        : @"",
+                        @"target"     : self
+                    }],
                     @{ @"name": @"separator" },
                     [NSMutableDictionary dictionaryWithDictionary:@{
                         @"name"       : @"Close",
@@ -602,7 +608,7 @@
 - (NSMenu *)mainMenu
 {
     NSMenu *mainMenu = [[NSMenu alloc] initWithTitle:@"MainMenu"];
-    NSApp.servicesMenu = [NSMenu alloc];
+    [NSApp setServicesMenu:[[NSMenu alloc] init]];
 
     for(id mMenu in menuTree) {
         NSMenu *menu = [[NSMenu alloc] initWithTitle:mMenu[@"name"]];
@@ -633,7 +639,7 @@
                 }
 
                 if ([subMenu[@"name"] isEqual:@"Services"]) {
-                    iItem.submenu = NSApp.servicesMenu;
+                    iItem.submenu = [NSApp servicesMenu];
                 }
             }
         }
@@ -700,6 +706,17 @@
         for (id url in [panel URLs])
             [fileArray addObject:[url path]];
         [(Application *)NSApp openFiles:fileArray];
+    }
+}
+
+- (void)openPlaylist
+{
+    NSOpenPanel *panel = [[NSOpenPanel alloc] init];
+
+    if ([panel runModal] == NSModalResponseOK){
+        NSString *pl = [NSString stringWithFormat:@"loadlist \"%@\"",
+                                                  [panel URLs][0].path];
+        [(Application *)NSApp queueCommand:(char *)[pl UTF8String]];
     }
 }
 
