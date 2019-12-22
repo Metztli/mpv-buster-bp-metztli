@@ -16,7 +16,7 @@ However, I renamed the debian/patches provided waf
 Simply build with command:
 
 dpkg-buildpackage -F -us -uc -jX -T binary-arch,binary-indep
-(where X above stands for number of CPU cores assigned to the task)
+ (where X stands for number of CPU cores assigned to the task)
 
 
 Huelmati [Enjoy]!
